@@ -1,0 +1,31 @@
+{% extends "template.html" %}
+{% block body %}
+<form action="{{ url_for('pageman_write') }}" method="POST">
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input type="text" class="form-control" name="title" id="title" />
+  </div>
+  <div class="form-group">
+    <label for="content">Content</label>
+    <textarea class="form-control" name="content" id="content"></textarea>
+  </div>
+  <button type="submit" class="btn btn-default">Write</button>
+</form>
+{% for entry in entries %}
+<div class="row">
+  <div class="col-md-12">
+    <h4><small>{{ entry['date'].strftime(FORMAT_DATE) }}</small></h4>
+    <h1>{{ entry['title'] }}</h1>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    {{ helper.markdown_to_html(entry['content']) | safe }}
+  </div>
+</div>
+{% endfor %}
+<script src="/static/simplemde/simplemde.min.js"></script>
+<script>
+  var simplemde = new SimpleMDE();
+</script>
+{% endblock %}

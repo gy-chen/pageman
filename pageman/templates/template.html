@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA'Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pageman</title>
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/static/simplemde/simplemde.min.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div id="title" class="row">
+	<div class="col-md-12 text-center">
+	  <h1>Pageman</h1>
+	</div>
+      </div>
+      <div id="menu">
+	<ul class="nav nav-pills nav-justified">
+	  <li><a href="#">Home</a></li>
+	  <li><a href="#">Merge Entries</a></li>
+	  <li><a href="#">Exports</a></li>
+	</ul>
+      </div>
+      <div id="pageman" class="row">
+	<div class="col-md-12">
+	  {% block body %}
+	  {% endblock %}
+	</div>
+      </div>
+    </div>
+    <script src="/static/jquery-1.12.2.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+  </body>
+</html>

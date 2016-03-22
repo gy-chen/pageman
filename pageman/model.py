@@ -1,6 +1,7 @@
 # model.py
 import collections
 import pymongo
+import helper
 from datetime import datetime
 
 class EntriesManager:
@@ -29,6 +30,9 @@ class EntriesManager:
             self._client = pymongo.MongoClient(mongodb_url)
         assert self._client is not None
         self._db = self._client[db_name]
+        # create index
+        self._db[self.COLLECTION_NAME].create_index([(Entry.FIELD_DATE,
+                                                      pymongo.DESCENDING)])
 
     def save_entry(self, data):
         """Save an entry
@@ -75,7 +79,7 @@ class EntriesManager:
         """
         skip = 0 if _from is None else _from
         limit = 0 if to is None else to - skip
-        return self._db[self.COLLECTION_NAME].find(skip=skip, limit=limit)
+        return self._db[self.COLLECTION_NAME].find(skip=skip, limit=limit).sort([(Entry.FIELD_DATE, pymongo.DESCENDING)])
 
 
 class Entry(collections.MutableMapping):
@@ -112,6 +116,9 @@ class Entry(collections.MutableMapping):
 
     def get_content(self):
         return self._data[self.FIELD_CONTENT]
+
+    def get_markdown_content(self):
+        return helper.markdown_to_html(self.get_content())
 
     def set_date(self, date):
         self._data[self.FIELD_DATE] = date
