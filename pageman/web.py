@@ -1,5 +1,6 @@
 import helper
 import model
+import pagination
 from flask import Flask
 from flask import render_template
 from flask import request
@@ -13,13 +14,17 @@ FORMAT_DATE = '%Y-%m-%d'
 def inject_formats():
     return dict(FORMAT_DATE=FORMAT_DATE)
 
-@app.route('/')
-def pageman():
+@app.route('/', defaults={'page': 1})
+@app.route('/page<int:page>')
+def pageman(page):
     em = model.EntriesManager()
+    total_rows = em.count_entries()
     # TODO add pagination
-    entries = em.get_entries()
+    pagi = pagination.Pagination(total_rows, current_page=page)
+    entries = em.get_entries(pagi.get_from_rows(), pagi.get_to_rows() + 1)
     return render_template('pageman.html',
                            entries=entries,
+                           pagination=pagi,
                            helper=helper)
 
 # TODO implement this method as a web API

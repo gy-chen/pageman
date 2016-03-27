@@ -81,6 +81,11 @@ class EntriesManager:
         limit = 0 if to is None else to - skip
         return self._db[self.COLLECTION_NAME].find(skip=skip, limit=limit).sort([(Entry.FIELD_DATE, pymongo.DESCENDING)])
 
+    def count_entries(self):
+        """Get the number of the entries
+        """
+        return self._db[self.COLLECTION_NAME].count()
+
 
 class Entry(collections.MutableMapping):
     """Represent an entry
