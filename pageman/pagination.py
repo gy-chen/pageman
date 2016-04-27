@@ -6,7 +6,7 @@ class Pagination:
 
     The page number is 1 based.
     This class is lazy. The updates of properties of this class will not affect
-    the pagination information. Must call the refresh() method to update the 
+    the pagination information. Must call the refresh() method to update the
     pagination information.
     """
     DEFAULT_PER_ROWS = 12
@@ -75,7 +75,7 @@ class Pagination:
 
     def refresh(self):
         # update total pages
-        self._total_pages = math.ceil(self._total_rows / self._per_rows) # +/+, always positive
+        self._total_pages = math.ceil(self._total_rows / self._per_rows) if self._total_rows != 0 else 1 # +/+, always positive
         # sanitize current page
         self._current_page = self._total_pages if self._total_pages < self._current_page else self._current_page
         # update pagination from page
@@ -92,6 +92,6 @@ class Pagination:
             left_span_coda += right_left_span_coda
             self._pagination_from_page = max(1, self._current_page - left_span_coda)
 
-       
+
 if __name__ == '__main__':
-    p = Pagination(178, current_page=7) 
+    p = Pagination(178, current_page=7)

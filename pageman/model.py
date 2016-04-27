@@ -40,7 +40,7 @@ class EntriesManager:
         Insert or update entry.
         If data is inserted (has _id), this method will update
         id of the data automatically.
-        Auto update date field data.
+        Auto update date field data to current time.
 
         examples:
           # use dict
@@ -147,13 +147,13 @@ class Entry(collections.MutableMapping):
 
     def __delitem__(self, key):
         return self._data.__delitem__(key)
-    
+
     def __iter__(self):
         return self._data.__iter__()
 
     def __len__(self):
         return self._data.__len__()
-    
+
 
 if __name__ == '__main__':
     em1 = EntriesManager()

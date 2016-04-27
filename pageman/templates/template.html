@@ -7,6 +7,9 @@
     <title>Pageman</title>
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="/static/simplemde/simplemde.min.css" />
+    <script src="/static/react/react.js"></script>
+    <script src="/static/react/react-dom.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
   </head>
   <body>
     <div class="container">
@@ -22,11 +25,9 @@
 	  <li><a href="#">Exports</a></li>
 	</ul>
       </div>
-      <div id="pageman" class="row">
-	<div class="col-md-12">
-	  {% block body %}
-	  {% endblock %}
-	</div>
+      <div id="pageman">
+	       {% block body %}
+	       {% endblock %}
       </div>
     </div>
     <script src="/static/jquery-1.12.2.min.js"></script>
