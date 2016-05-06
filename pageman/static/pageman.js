@@ -18,9 +18,10 @@ var Pageman = React.createClass({
     this._cancel_entries();
     this._cancel_pagination();
   },
-  onFormWrite: function () {
+  onFormWrite: function (title, content) {
     this._cancel_entries();
     this._cancel_pagination();
+    this._write_new_entry(title, content);
     this._request_entries();
     this._request_pagination();
   },
@@ -47,6 +48,12 @@ var Pageman = React.createClass({
     if (this.entries_request) {
       this.entries_request.abort();
     }
+  },
+  _write_new_entry: function (title, content) {
+    $.post(this.props.write_action_url, {
+      title: title,
+      content: content
+    });
   },
   _request_pagination: function () {
     this.pagination_request = $.get(this._pagination_url, function (result) {
@@ -82,14 +89,9 @@ Pageman.WriteForm = React.createClass({
 
   onWriteButtonClick: function (event) {
     event.preventDefault();
-    $.post(this.props.write_action_url, {
-      title: this._input_title.value,
-      content: this._input_content.value()
-    }, function (data, textStatus, jqXHR) {
-      this._input_title.value = '';
-      this._input_content.value('');
-      this.props.onFormWrite();
-    }.bind(this));
+    this.props.onFormWrite(this._input_title.value, this._input_content.value());
+    this._input_title.value = '';
+    this._input_content.value('');
   },
   componentDidMount: function () {
     this._input_content = new SimpleMDE();
@@ -166,6 +168,7 @@ The props this class needs:
   * title
   * content
 */
+// TODO use one separate class for displaying and anthor for editing
 Pageman.Entry = React.createClass({
   displayName: 'Entry',
 
