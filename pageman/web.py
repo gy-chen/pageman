@@ -45,8 +45,7 @@ def pageman_write():
     title = request.form['title']
     content = request.form['content']
     # TODO check input values
-    # TODO make separate setting file
-    em = model.EntriesManager('mongodb://192.168.99.100:32768')
+    em = model.EntriesManager(settings.MONGO_URL)
     new_entry = model.Entry()
     new_entry.set_title(title)
     new_entry.set_content(content)
