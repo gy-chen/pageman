@@ -1,6 +1,7 @@
 import helper
 import model
 import pagination
+import settings
 from flask import Flask
 from flask import Response
 from flask import render_template
@@ -20,7 +21,7 @@ def inject_formats():
 @app.route('/page<int:page>')
 def pageman(page):
     # TODO remove me later
-    em = model.EntriesManager('mongodb://192.168.99.100:32768')
+    em = model.EntriesManager(settings.MONGO_URL)
     total_rows = em.count_entries()
     pagi = pagination.Pagination(total_rows, current_page=page)
     entries = em.get_entries(pagi.get_from_rows(), pagi.get_to_rows() + 1)
@@ -32,8 +33,7 @@ def pageman(page):
 @app.route('/pageman/entries', defaults={'page': 1})
 @app.route('/pageman/entries/page<int:page>')
 def pageman_entries(page):
-    # TODO make separate setting file
-    em = model.EntriesManager('mongodb://192.168.99.100:32768')
+    em = model.EntriesManager(settings.MONGO_URL)
     total_rows = em.count_entries()
     pagi = pagination.Pagination(total_rows, current_page=page)
     entries = em.get_entries(pagi.get_from_rows(), pagi.get_to_rows() + 1)
@@ -64,8 +64,7 @@ def pageman_write():
 @app.route('/pageman/get_pagination', defaults={'page': 1})
 @app.route('/pageman/get_pagination/page<int:page>')
 def pageman_get_pagination(page):
-    # TODO make spearate setting file
-    em = model.EntriesManager('mongodb://192.168.99.100:32768')
+    em = model.EntriesManager(settings.MONGO_URL)
     total_rows = em.count_entries()
     pagi = pagination.Pagination(total_rows, current_page=page)
     hrefs = []
