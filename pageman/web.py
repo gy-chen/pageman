@@ -20,15 +20,7 @@ def inject_formats():
 @app.route('/', defaults={'page': 1})
 @app.route('/page<int:page>')
 def pageman(page):
-    # TODO remove me later
-    em = model.EntriesManager(settings.MONGO_URL)
-    total_rows = em.count_entries()
-    pagi = pagination.Pagination(total_rows, current_page=page)
-    entries = em.get_entries(pagi.get_from_rows(), pagi.get_to_rows() + 1)
-    return render_template('pageman.html',
-                           entries=entries,
-                           pagination=pagi,
-                           helper=helper)
+    return render_template('pageman.html')
 
 @app.route('/pageman/entries', defaults={'page': 1})
 @app.route('/pageman/entries/page<int:page>')
