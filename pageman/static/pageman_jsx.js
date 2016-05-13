@@ -16,20 +16,23 @@ var Pageman = React.createClass({
     this._cancel_pagination();
   },
   onFormWrite: function(title, content) {
-    this._cancel_entries();
-    this._cancel_pagination();
     this._write_new_entry(title, content);
-    this._request_entries();
-    this._request_pagination();
+    this._refresh_entries();
   },
   onPaginationButtonClick: function(href, pagination_url, event) {
     event.preventDefault();
     this._entries_url = href;
     this._pagination_url = pagination_url;
-    this._cancel_entries();
-    this._request_entries();
-    this._cancel_pagination();
-    this._request_pagination();
+    this._refresh_entries();
+  },
+  onEntryDelete: function(id) {
+    this._request_delete_entry(id);
+    this._refresh_entries();
+  },
+  _request_delete_entry: function(id) {
+    this.delete_entry_request = $.post(this.props.delete_action_url,
+      {id: id}
+    );
   },
   _request_entries: function() {
     this.setState({
@@ -67,13 +70,22 @@ var Pageman = React.createClass({
       this.pagination_request.abort();
     }
   },
+  _refresh_entries: function() {
+    this._cancel_pagination();
+    this._cancel_entries();
+    this._request_pagination();
+    this._request_entries();
+  },
   render: function() {
     return (
       <div>
         <Pageman.WriteForm
+          style={ {'marginBottom': '10px'} }
           write_action_url={ this.props.write_action_url }
           onFormWrite={ this.onFormWrite }  />
-        <Pageman.Entries entries={ this.state.entries } />
+        <Pageman.Entries
+          entries={ this.state.entries }
+          onEntryDelete={ this.onEntryDelete } />
         <Pageman.Pagination
           onPaginationButtonClick={ this.onPaginationButtonClick }
           hrefs={ this.state.pagination_hrefs } />
@@ -98,7 +110,7 @@ Pageman.WriteForm = React.createClass({
   },
   render: function() {
     return (
-      <form action={ this.props.write_action_url } method="POST">
+      <form action={ this.props.write_action_url } method="POST" { ...this.props }>
         <div className="form-group">
           <label htmlFor="title">Title</label>
           <input type="text" ref={ (element) => this._input_title = element} className="form-control" name="title" id="title" />
@@ -116,6 +128,7 @@ Pageman.WriteForm = React.createClass({
 /*
 The props this class needs:
   * entries: array of entries. e.g. [{'date': '...', 'title': '...', 'content': '...'}]
+  * onEntryDelete
 */
 Pageman.Entries = React.createClass({
   render: function() {
@@ -126,10 +139,12 @@ Pageman.Entries = React.createClass({
         this.props.entries.forEach(function(entry) {
           entries.push(<Pageman.Entry
                           key={entry.id}
+                          id={entry.id}
                           date={entry.date}
                           title={entry.title}
-                          content={entry.content} />);
-        });
+                          content={entry.content}
+                          onEntryDelete={this.props.onEntryDelete} />);
+        }.bind(this));
       }
       return (
         <div class="entries">
@@ -142,12 +157,76 @@ Pageman.Entries = React.createClass({
 /*
 The props this class needs:
   * key
+  * id
+  * date
+  * title
+  * content
+  * onEntryDelete
+*/
+// TODO use one separate class for displaying and anthor for editing
+Pageman.Entry = React.createClass({
+  onEditButtonClick: function() {
+
+  },
+  onDeleteButtonClick: function(id) {
+    this.props.onEntryDelete(id);
+  },
+  _create_inner_content_html: function(content) {
+    return {
+      __html: content
+    };
+  },
+  render: function() {
+    return (
+      <div>
+        <Pageman.EntryToolbar
+          style={ {'marginBottom': '-35px', 'marginTop': '7px', 'zIndex': 44} }
+          entry_id={ this.props.id }
+          onEditButtonClick={ this.onEditButtonClick }
+          onDeleteButtonClick={ this.onDeleteButtonClick } />
+        <Pageman.EntryDisplay
+          date={ this.props.date }
+          title={ this.props.title }
+          content={ this.props.content }
+        />
+      </div>
+    );
+  }
+});
+
+/**
+ * Toolbar for Entry.
+ * Props this class needs:
+ *  - entry_id
+ *  - onEditButtonClick
+ *  - onDeleteButtonClick
+ */
+Pageman.EntryToolbar = React.createClass({
+  render: function() {
+    return (
+      <div className="btn-group" {...this.props}>
+        <button
+          className="btn btn-default"
+          onClick={ this.props.onEditButtonClick }>
+          <i className="glyphicon glyphicon-edit"></i>
+        </button>
+        <button
+          className="btn btn-danger"
+          onClick={ this.props.onDeleteButtonClick.bind(null, this.props.entry_id) }>
+          <i className="glyphicon glyphicon-remove"></i>
+        </button>
+      </div>
+    );
+  }
+});
+
+/*
+The props this class needs:
   * date
   * title
   * content
 */
-// TODO use one separate class for displaying and anthor for editing
-Pageman.Entry = React.createClass({
+Pageman.EntryDisplay = React.createClass({
   _create_inner_content_html: function(content) {
     return {
       __html: content

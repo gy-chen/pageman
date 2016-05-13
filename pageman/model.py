@@ -2,6 +2,7 @@
 import collections
 import pymongo
 import helper
+from bson.objectid import ObjectId
 from datetime import datetime
 
 class EntriesManager:
@@ -69,7 +70,7 @@ class EntriesManager:
             id_of_data = data_or_id
         else:
             id_of_data = data_or_id['_id']
-        self._db[self.COLLECTION_NAME].delete_one({'_id': id_of_data})
+        result = self._db[self.COLLECTION_NAME].delete_one({'_id': ObjectId(id_of_data)})
 
     def get_entries(self, _from=None, to=None):
         """Get entries

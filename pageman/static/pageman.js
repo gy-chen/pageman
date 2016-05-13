@@ -1,4 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var Pageman = React.createClass({
   displayName: 'Pageman',
 
@@ -19,20 +21,21 @@ var Pageman = React.createClass({
     this._cancel_pagination();
   },
   onFormWrite: function (title, content) {
-    this._cancel_entries();
-    this._cancel_pagination();
     this._write_new_entry(title, content);
-    this._request_entries();
-    this._request_pagination();
+    this._refresh_entries();
   },
   onPaginationButtonClick: function (href, pagination_url, event) {
     event.preventDefault();
     this._entries_url = href;
     this._pagination_url = pagination_url;
-    this._cancel_entries();
-    this._request_entries();
-    this._cancel_pagination();
-    this._request_pagination();
+    this._refresh_entries();
+  },
+  onEntryDelete: function (id) {
+    this._request_delete_entry(id);
+    this._refresh_entries();
+  },
+  _request_delete_entry: function (id) {
+    this.delete_entry_request = $.post(this.props.delete_action_url, { id: id });
   },
   _request_entries: function () {
     this.setState({
@@ -65,14 +68,23 @@ var Pageman = React.createClass({
       this.pagination_request.abort();
     }
   },
+  _refresh_entries: function () {
+    this._cancel_pagination();
+    this._cancel_entries();
+    this._request_pagination();
+    this._request_entries();
+  },
   render: function () {
     return React.createElement(
       'div',
       null,
       React.createElement(Pageman.WriteForm, {
+        style: { 'marginBottom': '10px' },
         write_action_url: this.props.write_action_url,
         onFormWrite: this.onFormWrite }),
-      React.createElement(Pageman.Entries, { entries: this.state.entries }),
+      React.createElement(Pageman.Entries, {
+        entries: this.state.entries,
+        onEntryDelete: this.onEntryDelete }),
       React.createElement(Pageman.Pagination, {
         onPaginationButtonClick: this.onPaginationButtonClick,
         hrefs: this.state.pagination_hrefs })
@@ -99,7 +111,7 @@ Pageman.WriteForm = React.createClass({
   render: function () {
     return React.createElement(
       'form',
-      { action: this.props.write_action_url, method: 'POST' },
+      _extends({ action: this.props.write_action_url, method: 'POST' }, this.props),
       React.createElement(
         'div',
         { className: 'form-group' },
@@ -132,6 +144,7 @@ Pageman.WriteForm = React.createClass({
 /*
 The props this class needs:
   * entries: array of entries. e.g. [{'date': '...', 'title': '...', 'content': '...'}]
+  * onEntryDelete
 */
 Pageman.Entries = React.createClass({
   displayName: 'Entries',
@@ -148,10 +161,12 @@ Pageman.Entries = React.createClass({
       this.props.entries.forEach(function (entry) {
         entries.push(React.createElement(Pageman.Entry, {
           key: entry.id,
+          id: entry.id,
           date: entry.date,
           title: entry.title,
-          content: entry.content }));
-      });
+          content: entry.content,
+          onEntryDelete: this.props.onEntryDelete }));
+      }.bind(this));
     }
     return React.createElement(
       'div',
@@ -164,13 +179,83 @@ Pageman.Entries = React.createClass({
 /*
 The props this class needs:
   * key
+  * id
   * date
   * title
   * content
+  * onEntryDelete
 */
 // TODO use one separate class for displaying and anthor for editing
 Pageman.Entry = React.createClass({
   displayName: 'Entry',
+
+  onEditButtonClick: function () {},
+  onDeleteButtonClick: function (id) {
+    this.props.onEntryDelete(id);
+  },
+  _create_inner_content_html: function (content) {
+    return {
+      __html: content
+    };
+  },
+  render: function () {
+    return React.createElement(
+      'div',
+      null,
+      React.createElement(Pageman.EntryToolbar, {
+        style: { 'marginBottom': '-35px', 'marginTop': '7px', 'zIndex': 44 },
+        entry_id: this.props.id,
+        onEditButtonClick: this.onEditButtonClick,
+        onDeleteButtonClick: this.onDeleteButtonClick }),
+      React.createElement(Pageman.EntryDisplay, {
+        date: this.props.date,
+        title: this.props.title,
+        content: this.props.content
+      })
+    );
+  }
+});
+
+/**
+ * Toolbar for Entry.
+ * Props this class needs:
+ *  - entry_id
+ *  - onEditButtonClick
+ *  - onDeleteButtonClick
+ */
+Pageman.EntryToolbar = React.createClass({
+  displayName: 'EntryToolbar',
+
+  render: function () {
+    return React.createElement(
+      'div',
+      _extends({ className: 'btn-group' }, this.props),
+      React.createElement(
+        'button',
+        {
+          className: 'btn btn-default',
+          onClick: this.props.onEditButtonClick },
+        React.createElement('i', { className: 'glyphicon glyphicon-edit' })
+      ),
+      React.createElement(
+        'button',
+        {
+          className: 'btn btn-danger',
+          onClick: this.props.onDeleteButtonClick.bind(null, this.props.entry_id) },
+        React.createElement('i', { className: 'glyphicon glyphicon-remove' })
+      )
+    );
+  }
+});
+
+/*
+The props this class needs:
+  * date
+  * title
+  * content
+*/
+Pageman.EntryDisplay = React.createClass({
+  displayName: 'EntryDisplay',
 
   _create_inner_content_html: function (content) {
     return {

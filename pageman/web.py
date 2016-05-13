@@ -25,6 +25,7 @@ def pageman(page):
 @app.route('/pageman/entries', defaults={'page': 1})
 @app.route('/pageman/entries/page<int:page>')
 def pageman_entries(page):
+    'Get json format entries.'
     em = model.EntriesManager(settings.MONGO_URL)
     total_rows = em.count_entries()
     pagi = pagination.Pagination(total_rows, current_page=page)
@@ -52,6 +53,15 @@ def pageman_write():
     em.save_entry(new_entry)
     return Response(status=200)
 
+@app.route('/pageman/delete', methods=['POST'])
+def pageman_delete():
+    "Delete an entry"
+    id_ = request.form['id']
+    # TODO check input value
+    em = model.EntriesManager(settings.MONGO_URL)
+    em.delete_entry(id_)
+    return Response(status=200)
+
 @app.route('/pageman/get_pagination', defaults={'page': 1})
 @app.route('/pageman/get_pagination/page<int:page>')
 def pageman_get_pagination(page):
@@ -66,6 +76,7 @@ def pageman_get_pagination(page):
             'name': name,
             'display_as_href': display_as_href
         }
+    # Prev link
     if pagi.get_current_page() != 1:
         hrefs.append(_generate_href(
             url_for('pageman_entries', page=pagi.get_current_page() - 1),
@@ -73,6 +84,7 @@ def pageman_get_pagination(page):
             'Prev',
             True
         ))
+    # page links
     for p in range(pagi.get_pagination_from_page(), pagi.get_pagination_to_page() + 1):
         hrefs.append(_generate_href(
             url_for('pageman_entries', page=p),
@@ -80,6 +92,7 @@ def pageman_get_pagination(page):
             p,
             p != pagi.get_current_page())
         )
+    # Next link
     if pagi.get_current_page() != pagi.get_total_pages():
         hrefs.append(_generate_href(
             url_for('pageman_entries', page=pagi.get_current_page() + 1),
