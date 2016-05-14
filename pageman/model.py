@@ -109,6 +109,7 @@ class Entry(collections.MutableMapping):
         else:
             # TODO check fields of the data
             self._data = data
+        self._sanitize_data()
         assert isinstance(self._data, dict)
 
     def set_title(self, title):
@@ -134,6 +135,11 @@ class Entry(collections.MutableMapping):
 
     def get(self, name, default=None):
         return self._data.get(name, default)
+
+    def _sanitize_data(self):
+        # deal with type of the id
+        if self.FIELD_ID in self._data:
+            self._data[self.FIELD_ID] = ObjectId(self._data[self.FIELD_ID])
 
     def _generate_empty_data(self):
         return {self.FIELD_TITLE: None,

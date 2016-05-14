@@ -29,6 +29,19 @@ var Pageman = React.createClass({
     this._request_delete_entry(id);
     this._refresh_entries();
   },
+  onEntryEdit: function(id, title, content) {
+    this._request_edit_entry(id, title, content);
+    this._refresh_entries();
+  },
+  _request_edit_entry: function(id, title, content) {
+    this.edit_entry_request = $.post(this.props.edit_action_url,
+      {
+        id: id,
+        title: title,
+        content: content
+      }
+    );
+  },
   _request_delete_entry: function(id) {
     this.delete_entry_request = $.post(this.props.delete_action_url,
       {id: id}
@@ -81,11 +94,11 @@ var Pageman = React.createClass({
       <div>
         <Pageman.WriteForm
           style={ {'marginBottom': '10px'} }
-          write_action_url={ this.props.write_action_url }
           onFormWrite={ this.onFormWrite }  />
         <Pageman.Entries
           entries={ this.state.entries }
-          onEntryDelete={ this.onEntryDelete } />
+          onEntryDelete={ this.onEntryDelete }
+          onEntryEdit={ this.onEntryEdit } />
         <Pageman.Pagination
           onPaginationButtonClick={ this.onPaginationButtonClick }
           hrefs={ this.state.pagination_hrefs } />
@@ -96,30 +109,67 @@ var Pageman = React.createClass({
 
 /*
 The props this class needs:
-  * write_action_url
+  * onFormWrite: func that accepts parameters title and content of the form.
 */
 Pageman.WriteForm = React.createClass({
   onWriteButtonClick: function(event) {
     event.preventDefault();
-    this.props.onFormWrite(this._input_title.value, this._input_content.value());
+    this.props.onFormWrite(this._input_title.value, this._input_mde_content.value());
     this._input_title.value = '';
-    this._input_content.value('');
+    this._input_mde_content.value('');
   },
   componentDidMount: function() {
-    this._input_content = new SimpleMDE();
+    this._input_mde_content = new SimpleMDE({element: this._input_content});
   },
   render: function() {
     return (
-      <form action={ this.props.write_action_url } method="POST" { ...this.props }>
+      <form method="POST" { ...this.props }>
         <div className="form-group">
           <label htmlFor="title">Title</label>
           <input type="text" ref={ (element) => this._input_title = element} className="form-control" name="title" id="title" />
         </div>
         <div className="form-group">
           <label htmlFor="content">Content</label>
-          <textarea className="form-control" name="content" id="content"></textarea>
+          <textarea ref={ (element) => this._input_content = element } className="form-control" name="content" id="content"></textarea>
         </div>
         <button onClick={ this.onWriteButtonClick } type="submit" className="btn btn-primary btn-block">Write</button>
+      </form>
+    );
+  }
+});
+
+/*
+The pros this class needs:
+  * id
+  * title
+  * content
+  * hidden
+  * onFormEdit: func that accepts parameter id, title and content.
+*/
+Pageman.EditForm = React.createClass( {
+  onEditButtonClick: function(event) {
+    event.preventDefault();
+    this.props.onFormEdit(this.props.id, this._input_title.value, this._input_mde_content.value());
+  },
+  componentDidMount: function() {
+    this._input_title.value = this.props.title;
+    this._input_mde_content = new SimpleMDE({
+      element: this._input_content,
+      initialValue: this.props.content
+    });
+  },
+  render: function() {
+    return (
+      <form method="POST" hidden={ this.props.hidden }>
+        <div className="form-group">
+          <label htmlFor="title">Title</label>
+          <input type="text" ref={ (element) => this._input_title = element} className="form-control" name="title" id="title" />
+        </div>
+        <div className="form-group">
+          <label htmlFor="content">Content</label>
+          <textarea ref={ (element) => this._input_content = element } className="form-control" name="content" id={ this.props.id }></textarea>
+        </div>
+        <button onClick={ this.onEditButtonClick } type="submit" className="btn btn-primary btn-block">Write</button>
       </form>
     );
   }
@@ -129,6 +179,7 @@ Pageman.WriteForm = React.createClass({
 The props this class needs:
   * entries: array of entries. e.g. [{'date': '...', 'title': '...', 'content': '...'}]
   * onEntryDelete
+  * onEntryEdit
 */
 Pageman.Entries = React.createClass({
   render: function() {
@@ -143,7 +194,9 @@ Pageman.Entries = React.createClass({
                           date={entry.date}
                           title={entry.title}
                           content={entry.content}
-                          onEntryDelete={this.props.onEntryDelete} />);
+                          onEntryDelete={this.props.onEntryDelete}
+                          onEntryEdit={ this.props.onEntryEdit }
+                        />);
         }.bind(this));
       }
       return (
@@ -162,11 +215,20 @@ The props this class needs:
   * title
   * content
   * onEntryDelete
+  * onEntryEdit
 */
-// TODO use one separate class for displaying and anthor for editing
 Pageman.Entry = React.createClass({
+  getInitialState: function() {
+    return {
+      isEntryDisplayHidden: false,
+      isEntryEditHidden: true
+    };
+  },
   onEditButtonClick: function() {
-
+    this.setState({
+      isEntryDisplayHidden: !this.state.isEntryDisplayHidden,
+      isEntryEditHidden: !this.state.isEntryEditHidden
+    });
   },
   onDeleteButtonClick: function(id) {
     this.props.onEntryDelete(id);
@@ -180,14 +242,23 @@ Pageman.Entry = React.createClass({
     return (
       <div>
         <Pageman.EntryToolbar
-          style={ {'marginBottom': '-35px', 'marginTop': '7px', 'zIndex': 44} }
+          style={ {'marginTop': '10px', 'zIndex': 44} }
           entry_id={ this.props.id }
           onEditButtonClick={ this.onEditButtonClick }
           onDeleteButtonClick={ this.onDeleteButtonClick } />
         <Pageman.EntryDisplay
+          style={ {'marginTop': '-30px'} }
+          hidden={ this.state.isEntryDisplayHidden }
           date={ this.props.date }
           title={ this.props.title }
           content={ this.props.content }
+        />
+        <Pageman.EditForm
+          hidden={ this.state.isEntryEditHidden }
+          id={ this.props.id }
+          title={ this.props.title }
+          content={ this.props.content }
+          onFormEdit={ this.props.onEntryEdit }
         />
       </div>
     );
@@ -225,6 +296,7 @@ The props this class needs:
   * date
   * title
   * content
+  * isHidden
 */
 Pageman.EntryDisplay = React.createClass({
   _create_inner_content_html: function(content) {
@@ -234,7 +306,8 @@ Pageman.EntryDisplay = React.createClass({
   },
   render: function() {
     return (
-      <div className="entry">
+      // TODO remove custom props before using ...this.props
+      <div className="entry" hidden={ this.props.hidden } { ...this.props }>
         <div className="row">
           <div className="col-md-12">
             <h1><small>{ this.props.date }</small> { this.props.title }</h1>

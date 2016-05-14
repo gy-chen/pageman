@@ -53,6 +53,19 @@ def pageman_write():
     em.save_entry(new_entry)
     return Response(status=200)
 
+@app.route('/pageman/edit', methods=['POST'])
+def pageman_edit():
+    id_ = request.form['id']
+    title = request.form['title']
+    content = request.form['content']
+    em = model.EntriesManager(settings.MONGO_URL)
+    em.save_entry({
+        '_id': id_,
+        'title': title,
+        'content': content
+    })
+    return Response(status=200)
+
 @app.route('/pageman/delete', methods=['POST'])
 def pageman_delete():
     "Delete an entry"
