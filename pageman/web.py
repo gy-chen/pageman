@@ -36,7 +36,8 @@ def pageman_entries(page):
             'id': entry['_id'].__str__(),
             'date': entry['date'].strftime(FORMAT_DATE),
             'title': entry['title'],
-            'content': helper.markdown_to_html(entry['content'])
+            'content_html': helper.markdown_to_html(entry['content']),
+            'content': entry['content']
         })
     return jsonify(entries=output_entries)
 

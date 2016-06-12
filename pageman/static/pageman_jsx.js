@@ -193,7 +193,8 @@ Pageman.Entries = React.createClass({
                           id={entry.id}
                           date={entry.date}
                           title={entry.title}
-                          content={entry.content}
+                          content_markdown={entry.content}
+                          content_html={entry.content_html}
                           onEntryDelete={this.props.onEntryDelete}
                           onEntryEdit={ this.props.onEntryEdit }
                         />);
@@ -214,6 +215,7 @@ The props this class needs:
   * date
   * title
   * content
+  * content_html
   * onEntryDelete
   * onEntryEdit
 */
@@ -251,13 +253,13 @@ Pageman.Entry = React.createClass({
           hidden={ this.state.isEntryDisplayHidden }
           date={ this.props.date }
           title={ this.props.title }
-          content={ this.props.content }
+          content={ this.props.content_html }
         />
         <Pageman.EditForm
           hidden={ this.state.isEntryEditHidden }
           id={ this.props.id }
           title={ this.props.title }
-          content={ this.props.content }
+          content={ this.props.content_markdown }
           onFormEdit={ this.props.onEntryEdit }
         />
       </div>
