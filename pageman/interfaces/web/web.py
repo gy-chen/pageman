@@ -1,7 +1,7 @@
-import helper
-import model
-import pagination
-import settings
+from pageman.core import model
+from pageman.core import settings
+from pageman.tools import helper
+from pageman.tools import pagination
 from flask import Flask
 from flask import Response
 from flask import render_template

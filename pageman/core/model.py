@@ -1,7 +1,7 @@
 # model.py
 import collections
 import pymongo
-import helper
+from pageman.tools import helper
 from bson.objectid import ObjectId
 from datetime import datetime
 
