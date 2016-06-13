@@ -43,38 +43,92 @@ def pageman_entries(page):
 
 @app.route('/pageman/write', methods=['POST'])
 def pageman_write():
-    'Write a new entry'
+    '''Web API of writing a new entry
+
+    Method: POST
+    Input values:
+      * title: required
+      * content: required
+    Output values:
+      * errors: errors codes
+    Responses:
+      * 200: success
+      * 400: Has errors in input values
+    '''
     title = request.form['title']
     content = request.form['content']
-    # TODO check input values
-    em = model.EntriesManager(settings.MONGO_URL)
     new_entry = model.Entry()
     new_entry.set_title(title)
     new_entry.set_content(content)
-    em.save_entry(new_entry)
-    return Response(status=200)
+    new_entry.set_date_as_current_date()
+    # check input values
+    errors = new_entry.get_errors()
+    # no errors
+    if errors == 0:
+        em = model.EntriesManager(settings.MONGO_URL)
+        em.save_entry(new_entry)
+    response = jsonify(errors=errors)
+    response.status_code = 400 if errors > 0 else 200
+    return response
 
 @app.route('/pageman/edit', methods=['POST'])
 def pageman_edit():
+    """Web API for editing an entry
+
+    Method: POST
+    Input values:
+      * id: required
+      * title: required
+      * content: required
+    Output values:
+      * errors: errors codes
+    Responses:
+      * 200: success
+      * 400: Has errors in input values
+    """
     id_ = request.form['id']
     title = request.form['title']
     content = request.form['content']
-    em = model.EntriesManager(settings.MONGO_URL)
-    em.save_entry({
-        '_id': id_,
-        'title': title,
-        'content': content
-    })
-    return Response(status=200)
+    entry = model.Entry()
+    entry.set_id(id_)
+    entry.set_title(title)
+    entry.set_content(content)
+    entry.set_date_as_current_date()
+    # check input values
+    errors = entry.get_errors()
+    # no errors
+    # TODO encapsulate errors into a class
+    if errors == 0:
+        em = model.EntriesManager(settings.MONGO_URL)
+        em.save_entry(entry)
+    response = jsonify(errors=errors)
+    response.status_code = 400 if errors > 0 else 200
+    return response
 
 @app.route('/pageman/delete', methods=['POST'])
 def pageman_delete():
-    "Delete an entry"
-    id_ = request.form['id']
-    # TODO check input value
+    '''Web API for deleting an entry
+
+    Method: POST
+    Input values:
+      * id: required
+    Output values:
+      * errors: errors codes
+    Responses:
+      * 200: success
+      * 400: Has errors on input values
+    '''
+    # TODO refactor this error checking mechanic
+    errors = 0
+    try:
+        id_ = request.form['id']
+    except KeyError:
+        errors += model.Entry.ERROR_NO_ID
     em = model.EntriesManager(settings.MONGO_URL)
     em.delete_entry(id_)
-    return Response(status=200)
+    response = jsonify(errors=errors)
+    response.status_code = 400 if errors > 0 else 200
+    return response
 
 @app.route('/pageman/get_pagination', defaults={'page': 1})
 @app.route('/pageman/get_pagination/page<int:page>')

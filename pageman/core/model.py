@@ -1,5 +1,4 @@
 # model.py
-import collections
 import pymongo
 from pageman.tools import helper
 from bson.objectid import ObjectId
@@ -16,8 +15,12 @@ class EntriesManager:
       'date': 'last edit time' # optinal
     }
     """
-
     COLLECTION_NAME = 'entries'
+
+    FIELD_ID = '_id'
+    FIELD_TITLE = 'title'
+    FIELD_CONTENT = 'content'
+    FIELD_DATE = 'date'
 
     def __init__(self, mongodb_url=None, db_name='pageman_entries'):
         """init
@@ -35,27 +38,28 @@ class EntriesManager:
         self._db[self.COLLECTION_NAME].create_index([(Entry.FIELD_DATE,
                                                       pymongo.DESCENDING)])
 
-    def save_entry(self, data):
+    def save_entry(self, entry):
         """Save an entry
 
         Insert or update entry.
         If data is inserted (has _id), this method will update
         id of the data automatically.
-        Auto update date field data to current time.
 
         examples:
-          # use dict
-          manager.save_entry({'title': 'An title', 'content': 'Some content'})
-          # or use Entry
-          entry = Entry({'title': 'An title', 'content': 'Some content'})
+          # use Entry
+          entry = Entry(**{'title': 'An title', 'content': 'Some content'})
           manager.save_entry(entry)
 
-        data -> Entry or dict
+        data -> Entry
         """
-        if isinstance(data, dict):
-            data = Entry(data)
-        data.set_date(datetime.now())
-        # TODO check fields of the data
+        if not isinstance(entry, Entry):
+            raise TypeError('Parameter data must be an Entry.')
+        data = {}
+        if entry.get_id() is not None:
+            data[self.FIELD_ID] = entry.get_id()
+        data[self.FIELD_TITLE] = entry.get_title()
+        data[self.FIELD_DATE] = entry.get_date()
+        data[self.FIELD_CONTENT] = entry.get_content()
         self._db[self.COLLECTION_NAME].save(data)
 
     def delete_entry(self, data_or_id):
@@ -68,8 +72,12 @@ class EntriesManager:
         id_of_data = None
         if isinstance(data_or_id, str):
             id_of_data = data_or_id
+        elif isinstance(data_or_id, dict):
+            id_of_data = data_or_id[self.FIELD_ID]
+        elif isinstance(data_or_id, Entry):
+            id_of_data = data_or_id.get_id()
         else:
-            id_of_data = data_or_id['_id']
+            raise TypeError('Parameter data_or_id must be type of Entry, dict or str.')
         result = self._db[self.COLLECTION_NAME].delete_one({'_id': ObjectId(id_of_data)})
 
     def get_entries(self, _from=None, to=None):
@@ -88,79 +96,108 @@ class EntriesManager:
         return self._db[self.COLLECTION_NAME].count()
 
 
-class Entry(collections.MutableMapping):
+class Entry:
     """Represent an entry
+
+    This class validates all the input data.
     """
+    FORMAT_DATE = '%Y-%m-%d'
+
     FIELD_ID = '_id'
     FIELD_TITLE = 'title'
     FIELD_CONTENT = 'content'
     FIELD_DATE = 'date'
 
-    def __init__(self, data=None):
+    ERROR_NO_TITLE = 1 << 0
+    ERROR_NO_CONTENT = 1 << 1
+    ERROR_NO_DATE = 1 << 2
+    ERROR_WRONG_DATE_FORMAT = 1 << 3
+    ERROR_NO_ID = 1 << 4
+
+    def __init__(self, **data):
         '''Init
 
-        data -> dict or None
+        _id => (ObjectId or str) The id of this entry.
+        title => (str) The title of this entry.
+        content => (str) The markdown content of this entry.
+        date => (date or str) The modified date of this entry.
         '''
-        self._data = None
-        if data is not None and not isinstance(data, dict):
-            raise ValueError('data is not an instance of dict')
-        if data is None:
-            self._data = self._generate_empty_data()
-        else:
-            # TODO check fields of the data
-            self._data = data
-        self._sanitize_data()
-        assert isinstance(self._data, dict)
+        self._data = self._generate_empty_data()
+        input_id = data.get(self.FIELD_ID, None)
+        self.set_id(input_id)
+        input_title = data.get(self.FIELD_TITLE, None)
+        self.set_title(input_title)
+        input_content = data.get(self.FIELD_CONTENT, None)
+        self.set_content(input_content)
+        input_date = data.get(self.FIELD_DATE, None)
+        self.set_date(input_date)
+
+    def set_id(self, _id):
+        self._data[self.FIELD_ID] = _id
+
+    def get_id(self):
+        if self._data[self.FIELD_ID] is None:
+            return None
+        if not isinstance(self._data[self.FIELD_ID], ObjectId):
+            return ObjectId(self._data[self.FIELD_ID])
+        return self._data[self.FIELD_ID]
 
     def set_title(self, title):
         self._data[self.FIELD_TITLE] = title
 
     def get_title(self):
-        return self._data[self.FIELD_TITLE]
+        return str(self._data[self.FIELD_TITLE])
 
     def set_content(self, content):
         self._data[self.FIELD_CONTENT] = content
 
     def get_content(self):
-        return self._data[self.FIELD_CONTENT]
+        return str(self._data[self.FIELD_CONTENT])
 
     def get_markdown_content(self):
         return helper.markdown_to_html(self.get_content())
+
+    def set_date_as_current_date(self):
+        self.set_date(datetime.now())
 
     def set_date(self, date):
         self._data[self.FIELD_DATE] = date
 
     def get_date(self):
+        if not isinstance(self._data[self.FIELD_DATE], datetime):
+            return datetime.strptime(self._data[self.FIELD_DATE], self.FORMAT_DATE)
         return self._data[self.FIELD_DATE]
-
-    def get(self, name, default=None):
-        return self._data.get(name, default)
-
-    def _sanitize_data(self):
-        # deal with type of the id
-        if self.FIELD_ID in self._data:
-            self._data[self.FIELD_ID] = ObjectId(self._data[self.FIELD_ID])
 
     def _generate_empty_data(self):
         return {self.FIELD_TITLE: None,
                 self.FIELD_CONTENT: None,
                 self.FIELD_DATE: None}
 
-    def __getitem__(self, key):
-        return self._data.__getitem__(key)
+    def get_errors(self):
+        """Validate input values of this entry
 
-    def __setitem__(self, key, value):
-        return self._data.__setitem__(key, value)
-
-    def __delitem__(self, key):
-        return self._data.__delitem__(key)
-
-    def __iter__(self):
-        return self._data.__iter__()
-
-    def __len__(self):
-        return self._data.__len__()
-
+        Return errors codes. 0 represents no error.
+        () -> int
+        """
+        errors = 0
+        # validate title
+        title = self._data[self.FIELD_TITLE]
+        if title is None or not title.strip():
+            errors += self.ERROR_NO_TITLE
+        # validate content
+        content = self._data[self.FIELD_CONTENT]
+        if content is None or not content.strip():
+            errors += self.ERROR_NO_CONTENT
+        # validate date
+        date = self._data[self.FIELD_DATE]
+        if date is None:
+            errors += self.ERROR_NO_DATE
+        elif not isinstance(date, datetime):
+            try:
+                datetime.strptime(str(date), self.FORMAT_DATE)
+            except ValueError:
+                errors += self.ERROR_WRONG_DATE_FORMAT
+        return errors
 
 if __name__ == '__main__':
     em1 = EntriesManager()
