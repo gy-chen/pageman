@@ -1,0 +1,16 @@
+{
+  "name": "pageman-markdown",
+  "version": "0.0.1",
+  "main": "index.js",
+  "author": "<gy.chen@gms.nutc.edu.tw>",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "markdown-it": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^24.8.0"
+  }
+}
