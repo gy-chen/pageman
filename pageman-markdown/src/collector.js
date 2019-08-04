@@ -9,6 +9,18 @@ class NestStructure {
     getTokens() {
         return this.tokens;
     }
+
+    getLevel() {
+        return this.tokens[0].level;
+    }
+
+    getTitle() {
+        for (let i = 0; i < this.tokens.length; i++) {
+            if (this.tokens[i].type == 'inline') {
+                return this.tokens[i].content;
+            }
+        }
+    }
 }
 
 /**
